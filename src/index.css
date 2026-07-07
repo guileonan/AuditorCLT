@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 45 93% 47%;
+    --primary-foreground: 0 0% 0%;
+    
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 70%;
+    
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 0%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 45 93% 47%;
+    
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 45 93% 47%;
+    --primary-foreground: 0 0% 0%;
+    
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 70%;
+    
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 0%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 45 93% 47%;
+  }
+
+  a, button, input, select, textarea {
+    @apply transition-all duration-200 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary;
+  }
+}
+
+body {
+  @apply bg-background text-foreground;
+  font-family: 'Roboto Mono', monospace;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border));
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 40px rgba(234, 179, 8, 0.7);
+  }
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes pulse-neon {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(255, 255, 0, 0.4), 0 0 2px rgba(255, 255, 0, 0.2);
+  }
+  50% {
+    opacity: 0.85;
+    text-shadow: 0 0 16px rgba(255, 255, 0, 0.7), 0 0 4px rgba(255, 255, 0, 0.4);
+  }
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(4px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+@layer utilities {
+  .fintech-shadow-soft {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .fintech-shadow-glow {
+    box-shadow: 0 0 30px rgba(234, 179, 8, 0.3);
+  }
+  
+  .fintech-rounded {
+    border-radius: var(--radius);
+  }
+  
+  .fintech-rounded-lg {
+    border-radius: calc(var(--radius) + 4px);
+  }
+  
+  .fintech-text-silver {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .logo-wrapper {
+    @apply relative block overflow-hidden transition-transform duration-300 focus:outline-none focus:ring-2 focus:ring-destructive rounded;
+    aspect-ratio: 3 / 1; 
+  }
+  
+  .header-logo-container {
+    @apply w-[100px] md:w-[140px] h-auto;
+  }
+  
+  .footer-logo-container {
+    @apply w-[100px] md:w-[120px] h-auto;
+  }
+
+  .logo-image {
+    @apply w-full h-full object-contain transition-transform duration-300 hover:scale-105 bg-transparent block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
+  .animate-pulse-neon {
+    animation: pulse-neon 3s ease-in-out infinite;
+  }
+
+  .animate-fade-in-out {
+    animation: fadeInOut 5s ease-in-out infinite;
+  }
+}
