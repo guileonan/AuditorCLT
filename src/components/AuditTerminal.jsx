@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Activity, Calculator, AlertTriangle, RefreshCw, Copy, MessageSquare, User, Briefcase, Unlock } from 'lucide-react';
+import { Terminal, Activity, Calculator, AlertTriangle, RefreshCw, Copy, MessageSquare, User, Briefcase, Unlock, Phone, FileText, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { MESSAGE_TEMPLATES, INITIAL_FORM_STATE, LINKS } from '@/constants/appConstants';
@@ -526,40 +526,81 @@ const AuditTerminal = () => {
                     *Nota de Sistema: Os valores e minutas gerados acima constituem uma simulação estimada com base nos dados fornecidos pelo usuário e na legislação trabalhista corrente. Este relatório possui caráter puramente informativo e pedagógico, não substituindo assistência jurídica formal.
                   </p>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                    className="mb-8 bg-[#111] border-2 border-yellow-500/50 rounded-lg p-6 md:p-8 relative overflow-hidden group hover:border-yellow-500/80 transition-all cursor-pointer shadow-lg"
-                    onClick={scrollToFGTS}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-start gap-4 md:gap-6 mb-4">
-                        <div className="mt-1 bg-yellow-500/10 p-2 rounded-full border border-yellow-500/30">
-                          <Unlock className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-yellow-500 font-mono font-bold text-sm md:text-base uppercase tracking-wider mb-3 flex items-center gap-2">
-                            [SYSTEM_NOTICE] OPORTUNIDADE DE SAQUE IMEDIATO
-                            <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                              💰
-                            </motion.span>
-                          </h3>
-                          <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-6 font-light">
-                            Não espere acordos demorados. Verificamos que você pode ter saldo disponível para antecipação do FGTS agora mesmo.
-                          </p>
-                          <Button
-                            onClick={scrollToFGTS}
-                            className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm md:text-base py-3 px-6 md:py-6 md:px-8 rounded-md border border-yellow-600 shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:shadow-[0_0_25px_rgba(234,179,8,0.7)] transition-all hover:scale-[1.02] uppercase tracking-widest w-full md:w-auto"
-                          >
-                            SIMULAR ANTECIPAÇÃO &gt;
-                          </Button>
+                  {(formData.terminationReason === 'pedido_demissao' || formData.terminationReason === 'com_justa_causa') && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="mb-8 bg-[#111] border-2 border-yellow-500/50 rounded-lg p-6 md:p-8 relative overflow-hidden shadow-lg"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent opacity-60"></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-start gap-4 md:gap-6">
+                          <div className="mt-1 bg-yellow-500/10 p-2 rounded-full border border-yellow-500/30 flex-shrink-0">
+                            <Unlock className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-yellow-500 font-mono font-bold text-sm md:text-base uppercase tracking-wider mb-3">
+                              CredLiber — Antecipação de FGTS
+                            </h3>
+                            <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-6 font-light">
+                              Ficou com o FGTS preso na Caixa devido ao tipo de demissão? Antecipe as parcelas do Saque-Aniversário hoje mesmo.
+                            </p>
+                            <a
+                              href={LINKS.CREDLIBER_PORTAL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm md:text-base py-4 px-6 md:px-8 rounded-md border border-yellow-600 shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:shadow-[0_0_25px_rgba(234,179,8,0.7)] transition-all hover:scale-[1.02] uppercase tracking-widest w-full md:w-auto pulse-animation"
+                            >
+                              <Phone className="w-5 h-5" />
+                              Falar com Atendimento
+                              <ArrowRight className="w-5 h-5" />
+                            </a>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  )}
+
+                  {formData.terminationReason === 'sem_justa_causa' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="mb-8 bg-[#111] border-2 border-green-500/50 rounded-lg p-6 md:p-8 relative overflow-hidden shadow-lg"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-60"></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-start gap-4 md:gap-6">
+                          <div className="mt-1 bg-green-500/10 p-2 rounded-full border border-green-500/30 flex-shrink-0">
+                            <FileText className="w-6 h-6 md:w-8 md:h-8 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-green-500 font-mono font-bold text-sm md:text-base uppercase tracking-wider mb-3">
+                              Kit Currículo Perfeito
+                            </h3>
+                            <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-6 font-light">
+                              Foi demitido e precisa voltar ao mercado? Baixe nosso Kit Currículo Perfeito + Guia de Entrevistas por apenas R$ 9,90.
+                            </p>
+                            <a
+                              href={LINKS.INFOPRODUTO_CHECKOUT}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-3 bg-green-500 hover:bg-green-400 text-black font-extrabold text-sm md:text-base py-4 px-6 md:px-8 rounded-md border border-green-600 shadow-[0_0_15px_rgba(34,197,94,0.5)] hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all hover:scale-[1.02] uppercase tracking-widest w-full md:w-auto pulse-animation"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
+                                <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.458zM4.25 12.29c.55 0 1.066.213 1.454.602l2.108 2.108a.4.4 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.462L9.713 9.63a2.125 2.125 0 0 0-3.007 0l-2.66 2.66h.204z"/>
+                                <path d="M17.706 9.63l-1.63-1.63a.312.312 0 0 1-.117.024h-.927c-.402 0-.797.163-1.082.448l-2.1 2.1a1.05 1.05 0 0 1-1.484 0l-2.108-2.108a1.518 1.518 0 0 0-1.082-.448h-1.14a.31.31 0 0 1-.11-.022L2.294 9.63a2.125 2.125 0 0 0 0 3.007l1.532 1.532a.311.311 0 0 1 .11-.022h1.14c.406 0 .798-.163 1.082-.448l2.108-2.108a1.076 1.076 0 0 1 1.484 0l2.1 2.1c.285.285.68.448 1.082.448h.927c.04 0 .08.009.117.024l1.63-1.63a2.125 2.125 0 0 0 0-3.008z"/>
+                              </svg>
+                              Comprar via Pix — R$ 9,90
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
                   <div className="mb-10">
                     <div className="bg-[#0a0a0a] border border-gray-700/80 p-6 md:p-10 flex flex-col relative group hover:border-blue-500/50 transition-colors rounded-sm shadow-lg">
@@ -584,15 +625,6 @@ const AuditTerminal = () => {
                           <Copy className="w-5 h-5 mr-3" />
                           Copiar Mensagem
                         </Button>
-
-                        <a
-                          href={LINKS.CREDLIBER_PORTAL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-transparent border-2 text-[#FFC107] hover:text-[#FFD54F] border-[#FFC107] hover:border-[#FFD54F] font-mono font-bold text-sm md:text-base py-4 md:py-6 px-4 rounded-md transition-all hover:shadow-[0_0_20px_rgba(255,193,7,0.4)] flex items-center justify-center uppercase tracking-widest pulse-animation"
-                        >
-                          &gt; INICIAR_SAQUE_FGTS_AGORA
-                        </a>
                       </div>
                     </div>
                   </div>

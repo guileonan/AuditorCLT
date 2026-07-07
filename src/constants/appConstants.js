@@ -12,6 +12,7 @@ export const ASSETS = {
 
 export const LINKS = {
   CREDLIBER_PORTAL: 'https://portal.credliber.com.br/credit/auditorcltu30',
+  INFOPRODUTO_CHECKOUT: 'https://pay.kiwify.com.br/kit-curriculo-perfeito',
 };
 
 export const METRICS = {
