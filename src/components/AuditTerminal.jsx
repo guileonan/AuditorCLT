@@ -202,7 +202,11 @@ const AuditTerminal = () => {
       const template = MESSAGE_TEMPLATES[formData.tone] || MESSAGE_TEMPLATES.professional;
       const generatedText = template(formData, calcResults);
       
-      setResults({ ...calcResults, aiMessage: generatedText });
+      setResults({
+        ...calcResults,
+        aiMessage: generatedText,
+        terminationReason: formData.terminationReason,
+      });
       setStep('result');
     } else {
       setStep('input');
@@ -210,24 +214,10 @@ const AuditTerminal = () => {
     setLoading(false);
   }, [calculateSeverance, formData]);
 
-  const scrollToFGTS = useCallback(() => {
-    setTimeout(() => {
-      const element = document.getElementById('fgts-section');
-      if (element) {
-        const yOffset = -80;
-        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-        element.classList.add('ring-4', 'ring-yellow-500', 'transition-all');
-        setTimeout(() => element.classList.remove('ring-4', 'ring-yellow-500'), 1500);
-      }
-    }, 300);
-  }, []);
-
   const copyToClipboard = useCallback((text) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copiado!", description: "Mensagem copiada. Role para ver uma oportunidade extra." });
-    scrollToFGTS();
-  }, [toast, scrollToFGTS]);
+    toast({ title: "Copiado!", description: "Mensagem copiada para a área de transferência." });
+  }, [toast]);
 
   return (
     <section id="audit-terminal" className='py-16 md:py-24 px-4 md:px-8 bg-gradient-to-b from-[#0a0a0a] to-[#121212] border-t border-gray-900'>
@@ -526,40 +516,69 @@ const AuditTerminal = () => {
                     *Nota de Sistema: Os valores e minutas gerados acima constituem uma simulação estimada com base nos dados fornecidos pelo usuário e na legislação trabalhista corrente. Este relatório possui caráter puramente informativo e pedagógico, não substituindo assistência jurídica formal.
                   </p>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                    className="mb-8 bg-[#111] border-2 border-yellow-500/50 rounded-lg p-6 md:p-8 relative overflow-hidden group hover:border-yellow-500/80 transition-all cursor-pointer shadow-lg"
-                    onClick={scrollToFGTS}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-start gap-4 md:gap-6 mb-4">
-                        <div className="mt-1 bg-yellow-500/10 p-2 rounded-full border border-yellow-500/30">
-                          <Unlock className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
+                  {(results.terminationReason === 'pedido_demissao' || results.terminationReason === 'com_justa_causa') && (
+                    <motion.aside
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="mb-8 rounded-lg border-2 border-yellow-500/60 bg-[#111] p-6 shadow-lg md:p-8"
+                      aria-labelledby="credliber-offer-title"
+                    >
+                      <div className="flex flex-col items-start gap-5 md:flex-row md:gap-6">
+                        <div className="rounded-full border border-yellow-500/40 bg-yellow-500/10 p-3">
+                          <Unlock className="h-7 w-7 text-yellow-500" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-yellow-500 font-mono font-bold text-sm md:text-base uppercase tracking-wider mb-3 flex items-center gap-2">
-                            [SYSTEM_NOTICE] OPORTUNIDADE DE SAQUE IMEDIATO
-                            <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                              💰
-                            </motion.span>
+                          <h3 id="credliber-offer-title" className="mb-3 text-sm font-bold uppercase tracking-wider text-yellow-500 md:text-base">
+                            Antecipação do Saque-Aniversário
                           </h3>
-                          <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-6 font-light">
-                            Não espere acordos demorados. Verificamos que você pode ter saldo disponível para antecipação do FGTS agora mesmo.
+                          <p className="mb-6 text-sm leading-relaxed text-gray-200 md:text-base">
+                            Ficou com o FGTS preso na Caixa devido ao tipo de demissão? Antecipe as parcelas do Saque-Aniversário hoje mesmo.
                           </p>
-                          <Button
-                            onClick={scrollToFGTS}
-                            className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm md:text-base py-3 px-6 md:py-6 md:px-8 rounded-md border border-yellow-600 shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:shadow-[0_0_25px_rgba(234,179,8,0.7)] transition-all hover:scale-[1.02] uppercase tracking-widest w-full md:w-auto"
+                          <a
+                            href={LINKS.CREDLIBER_PORTAL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex w-full items-center justify-center rounded-md border border-yellow-600 bg-yellow-500 px-6 py-4 text-center text-sm font-extrabold uppercase tracking-widest text-black transition-colors hover:bg-yellow-400 md:w-fit"
                           >
-                            SIMULAR ANTECIPAÇÃO &gt;
-                          </Button>
+                            Falar com o atendimento
+                          </a>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.aside>
+                  )}
+
+                  {results.terminationReason === 'sem_justa_causa' && (
+                    <motion.aside
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="mb-8 rounded-lg border-2 border-green-500/60 bg-[#111] p-6 shadow-lg md:p-8"
+                      aria-labelledby="career-kit-offer-title"
+                    >
+                      <div className="flex flex-col items-start gap-5 md:flex-row md:gap-6">
+                        <div className="rounded-full border border-green-500/40 bg-green-500/10 p-3">
+                          <Briefcase className="h-7 w-7 text-green-400" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 id="career-kit-offer-title" className="mb-3 text-sm font-bold uppercase tracking-wider text-green-400 md:text-base">
+                            Kit para voltar ao mercado
+                          </h3>
+                          <p className="mb-6 text-sm leading-relaxed text-gray-200 md:text-base">
+                            Foi demitido e precisa voltar ao mercado? Baixe nosso Kit Currículo Perfeito + Guia de Entrevistas por apenas R$ 9,90.
+                          </p>
+                          <a
+                            href={LINKS.CAREER_KIT_PIX}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex w-full items-center justify-center rounded-md border border-green-600 bg-green-500 px-6 py-4 text-center text-sm font-extrabold uppercase tracking-widest text-black transition-colors hover:bg-green-400 md:w-fit"
+                          >
+                            Comprar por Pix — R$ 9,90
+                          </a>
+                        </div>
+                      </div>
+                    </motion.aside>
+                  )}
 
                   <div className="mb-10">
                     <div className="bg-[#0a0a0a] border border-gray-700/80 p-6 md:p-10 flex flex-col relative group hover:border-blue-500/50 transition-colors rounded-sm shadow-lg">
@@ -585,14 +604,6 @@ const AuditTerminal = () => {
                           Copiar Mensagem
                         </Button>
 
-                        <a
-                          href={LINKS.CREDLIBER_PORTAL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-transparent border-2 text-[#FFC107] hover:text-[#FFD54F] border-[#FFC107] hover:border-[#FFD54F] font-mono font-bold text-sm md:text-base py-4 md:py-6 px-4 rounded-md transition-all hover:shadow-[0_0_20px_rgba(255,193,7,0.4)] flex items-center justify-center uppercase tracking-widest pulse-animation"
-                        >
-                          &gt; INICIAR_SAQUE_FGTS_AGORA
-                        </a>
                       </div>
                     </div>
                   </div>

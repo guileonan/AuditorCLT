@@ -12,6 +12,7 @@ export const ASSETS = {
 
 export const LINKS = {
   CREDLIBER_PORTAL: 'https://portal.credliber.com.br/credit/auditorcltu30',
+  CAREER_KIT_PIX: 'https://bit.ly/4f5rPE4',
 };
 
 export const METRICS = {
