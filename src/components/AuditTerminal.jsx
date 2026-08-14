@@ -1,12 +1,44 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Activity, Calculator, AlertTriangle, RefreshCw, Copy, MessageSquare, User, Briefcase, Unlock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  Terminal,
+  Activity,
+  Calculator,
+  AlertTriangle,
+  RefreshCw,
+  Copy,
+  MessageSquare,
+  User,
+  Briefcase,
+  Unlock,
+  CheckCircle2,
+} from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MESSAGE_TEMPLATES, INITIAL_FORM_STATE, LINKS } from '@/constants/appConstants';
+import {
+  calculateSeverance,
+  validateSeveranceInput,
+  FIXED_TERM_REASONS,
+  TERMINATION_OPTIONS,
+} from '@/lib/cltCalculator';
+
+/* ------------------------------------------------------------------ */
+/* Primitivas de formulário no padrão terminal                         */
+/* ------------------------------------------------------------------ */
+
+const FieldLabel = memo(({ children, htmlFor }) => (
+  <label
+    htmlFor={htmlFor}
+    className="block font-mono-sys text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-secondary mb-3"
+  >
+    <span className="text-destructive mr-2">&gt;</span>
+    {children}
+  </label>
+));
+FieldLabel.displayName = 'FieldLabel';
 
 /**
- * Reusable Date Selector component.
+ * Seletor de data em três partes. Lógica preservada do original.
  */
 const DateSelector = memo(({ label, name, value, onChange }) => {
   const [selectedDay, setSelectedDay] = useState('');
@@ -29,7 +61,7 @@ const DateSelector = memo(({ label, name, value, onChange }) => {
     { value: '05', label: 'Mai' }, { value: '06', label: 'Jun' },
     { value: '07', label: 'Jul' }, { value: '08', label: 'Ago' },
     { value: '09', label: 'Set' }, { value: '10', label: 'Out' },
-    { value: '11', label: 'Nov' }, { value: '12', label: 'Dez' }
+    { value: '11', label: 'Nov' }, { value: '12', label: 'Dez' },
   ];
   const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
@@ -49,44 +81,77 @@ const DateSelector = memo(({ label, name, value, onChange }) => {
 
   return (
     <div className="w-full">
-      <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400 mb-2 md:mb-3">{label}</label>
+      <FieldLabel>{label}</FieldLabel>
       <div className="grid grid-cols-3 gap-2 md:gap-3">
-        <div className="relative">
-           <select 
-             className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-3.5 text-xs md:text-sm appearance-none focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none rounded-sm transition-all"
-             value={selectedDay}
-             onChange={(e) => handlePartChange('day', e.target.value)}
-           >
-             <option value="">Dia</option>
-             {days.map(d => <option key={d} value={d}>{d}</option>)}
-           </select>
-        </div>
-        <div className="relative">
-           <select 
-             className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-3.5 text-xs md:text-sm appearance-none focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none rounded-sm transition-all"
-             value={selectedMonth}
-             onChange={(e) => handlePartChange('month', e.target.value)}
-           >
-             <option value="">Mês</option>
-             {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-           </select>
-        </div>
-        <div className="relative">
-           <select 
-             className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-3.5 text-xs md:text-sm appearance-none focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none rounded-sm transition-all"
-             value={selectedYear}
-             onChange={(e) => handlePartChange('year', e.target.value)}
-           >
-             <option value="">Ano</option>
-             {years.map(y => <option key={y} value={y}>{y}</option>)}
-           </select>
-        </div>
+        <select
+          aria-label={`${label} — dia`}
+          className="terminal-select"
+          value={selectedDay}
+          onChange={(e) => handlePartChange('day', e.target.value)}
+        >
+          <option value="">Dia</option>
+          {days.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+
+        <select
+          aria-label={`${label} — mês`}
+          className="terminal-select"
+          value={selectedMonth}
+          onChange={(e) => handlePartChange('month', e.target.value)}
+        >
+          <option value="">Mês</option>
+          {months.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+
+        <select
+          aria-label={`${label} — ano`}
+          className="terminal-select"
+          value={selectedYear}
+          onChange={(e) => handlePartChange('year', e.target.value)}
+        >
+          <option value="">Ano</option>
+          {years.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
       </div>
     </div>
   );
 });
-
 DateSelector.displayName = 'DateSelector';
+
+/** Linha do relatório financeiro. */
+const ReportRow = memo(({ label, hint, value, tone = 'default', size = 'lg' }) => (
+  <div className="flex justify-between items-baseline gap-4 py-3 border-b border-white/5 last:border-b-0">
+    <span className="text-sm text-secondary font-light">
+      {label}
+      {hint && (
+        <span className="block font-mono-sys text-[10px] tracking-wider text-secondary/50 mt-1">
+          {hint}
+        </span>
+      )}
+    </span>
+    <span
+      className={`font-mono-sys font-medium tabular-nums shrink-0 ${
+        size === 'sm' ? 'text-sm md:text-base' : 'text-lg md:text-xl'
+      } ${
+        tone === 'negative'
+          ? 'text-destructive'
+          : tone === 'muted'
+            ? 'text-secondary'
+            : 'text-foreground'
+      }`}
+    >
+      {value}
+    </span>
+  </div>
+));
+ReportRow.displayName = 'ReportRow';
+
+const formatBRL = (n) =>
+  Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* ------------------------------------------------------------------ */
+/* Terminal                                                            */
+/* ------------------------------------------------------------------ */
 
 const AuditTerminal = () => {
   const { toast } = useToast();
@@ -122,71 +187,36 @@ const AuditTerminal = () => {
     setStep('input');
     setFormData(INITIAL_FORM_STATE);
     setTimeout(() => {
-      if (terminalTopRef.current) {
-        terminalTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      terminalTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }, []);
 
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
+
+    setFormData((prev) => {
+      const next = { ...prev, [name]: type === 'checkbox' ? checked : value };
+
+      // Sair de um contrato a termo descarta a data prevista, para não deixar
+      // um valor órfão influenciando o cálculo depois.
+      if (name === 'terminationReason' && !FIXED_TERM_REASONS.includes(value)) {
+        next.contractEndDate = '';
+      }
+
+      return next;
+    });
   }, []);
 
-  const calculateSeverance = useCallback(() => {
-    const salary = parseFloat(formData.salary);
-    const start = new Date(formData.admissionDate);
-    const end = new Date(formData.exitDate);
-    const offer = parseFloat(formData.companyOffer);
+  /* ---- Cálculo: motor em @/lib/cltCalculator, testado em tests/ ---- */
+  const runCalculation = useCallback(() => {
+    const problem = validateSeveranceInput(formData);
 
-    if (isNaN(salary) || isNaN(offer) || !formData.admissionDate || !formData.exitDate || !formData.managerName || !formData.userName) {
-      toast({ title: "Dados Incompletos", description: "Por favor preencha todos os campos, incluindo datas e nomes.", variant: "destructive" });
+    if (problem) {
+      toast({ ...problem, variant: 'destructive' });
       return null;
     }
 
-    if (end < start) {
-      toast({ title: "Datas Inválidas", description: "A data de saída não pode ser anterior à data de admissão.", variant: "destructive" });
-      return null;
-    }
-
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    const yearsWorked = Math.floor(diffDays / 365);
-    const monthsWorked = Math.floor(diffDays / 30);
-
-    const daysInLastMonth = end.getDate();
-    const saldoSalario = (salary / 30) * daysInLastMonth;
-
-    let avisoPrevio = 0;
-    if (formData.noticeType === 'indenizado') {
-        const avisoDays = Math.min(90, 30 + (yearsWorked * 3));
-        avisoPrevio = (salary / 30) * avisoDays;
-    }
-
-    const monthsCurrentYear = end.getMonth() + 1 + (end.getDate() >= 15 ? 1 : 0);
-    const decimoTerceiro = (salary / 12) * Math.min(12, monthsCurrentYear);
-
-    const feriasProporcionaisBase = (salary / 12) * (monthsWorked % 12);
-    const feriasTotal = feriasProporcionaisBase * 1.3333;
-    const feriasVencidas = formData.vacationOverdue ? salary * 1.3333 : 0;
-
-    let multaFGTS = 0;
-    if (formData.terminationReason === 'sem_justa_causa' || formData.terminationReason === 'rescisao_indireta') {
-         const estimatedFGTSBalance = (salary * 0.08) * monthsWorked;
-         multaFGTS = estimatedFGTSBalance * 0.40;
-    }
-
-    const totalEstimated = saldoSalario + avisoPrevio + decimoTerceiro + feriasTotal + feriasVencidas + multaFGTS;
-    const difference = totalEstimated - offer;
-
-    return {
-      estimatedValue: totalEstimated,
-      difference: difference,
-      details: { saldoSalario, avisoPrevio, decimoTerceiro, feriasTotal, multaFGTS }
-    };
+    return calculateSeverance(formData);
   }, [formData, toast]);
 
   const handleSubmit = useCallback(async (e) => {
@@ -194,81 +224,87 @@ const AuditTerminal = () => {
     setStep('processing');
     setLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const calcResults = calculateSeverance();
-    
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const calcResults = runCalculation();
+
     if (calcResults) {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       const template = MESSAGE_TEMPLATES[formData.tone] || MESSAGE_TEMPLATES.professional;
       const generatedText = template(formData, calcResults);
-      
-      setResults({ ...calcResults, aiMessage: generatedText });
+
+      setResults({
+        ...calcResults,
+        aiMessage: generatedText,
+        terminationReason: formData.terminationReason,
+      });
       setStep('result');
     } else {
       setStep('input');
     }
     setLoading(false);
-  }, [calculateSeverance, formData]);
-
-  const scrollToFGTS = useCallback(() => {
-    setTimeout(() => {
-      const element = document.getElementById('fgts-section');
-      if (element) {
-        const yOffset = -80;
-        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-        element.classList.add('ring-4', 'ring-yellow-500', 'transition-all');
-        setTimeout(() => element.classList.remove('ring-4', 'ring-yellow-500'), 1500);
-      }
-    }, 300);
-  }, []);
+  }, [runCalculation, formData]);
 
   const copyToClipboard = useCallback((text) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copiado!", description: "Mensagem copiada. Role para ver uma oportunidade extra." });
-    scrollToFGTS();
-  }, [toast, scrollToFGTS]);
+    toast({ title: 'Copiado', description: 'Mensagem copiada para a área de transferência.' });
+  }, [toast]);
+
+  const statusLabel =
+    step === 'input' ? 'Aguardando dados'
+      : step === 'processing' ? 'Processando'
+        : 'Auditoria concluída';
+
+  const hasShortfall = results ? results.difference > 0 : false;
+  const isFixedTerm = FIXED_TERM_REASONS.includes(formData.terminationReason);
 
   return (
-    <section id="audit-terminal" className='py-16 md:py-24 px-4 md:px-8 bg-gradient-to-b from-[#0a0a0a] to-[#121212] border-t border-gray-900'>
-      <div className='max-w-6xl mx-auto'>
+    <section id="audit-terminal" className="relative py-20 md:py-28 border-t border-white/5 scroll-mt-24">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.02] grid-overlay" />
+
+      <div className="max-w-6xl mx-auto px-5 md:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.8 }}
-          className='bg-[#0d0d0d] border border-gray-800 shadow-2xl relative overflow-hidden rounded-xl'
+          className="gradient-border pulse-glow bg-background rounded-2xl relative overflow-hidden border border-transparent scanlines scan-sweep"
           ref={terminalTopRef}
         >
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 1), rgba(0, 255, 0, 1), rgba(0, 0, 255, 1))', backgroundSize: '100% 3px, 4px 100%' }}></div>
-
-          <div className='bg-[#111] border-b border-gray-800 px-5 py-4 md:px-8 md:py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6'>
-            <div className='flex items-center gap-4'>
-              <div className="p-2 md:p-3 bg-red-950/30 rounded-lg border border-red-900/30">
-                <Terminal className='w-6 h-6 md:w-8 md:h-8 text-red-500' />
+          {/* Barra de topo */}
+          <div className="relative z-30 border-b border-white/5 bg-card/60 backdrop-blur-sm px-5 py-5 md:px-8 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 shrink-0 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+                <Terminal className="w-5 h-5 text-destructive" />
               </div>
               <div>
-                <h2 className='text-lg md:text-2xl font-bold text-white uppercase tracking-wider font-mono'>
-                  Terminal de Auditoria
+                <h2 className="font-mono-sys text-sm md:text-base tracking-[0.2em] text-foreground uppercase">
+                  Terminal de auditoria
                 </h2>
-                <p className="text-gray-400 text-[11px] md:text-sm font-mono mt-1 max-w-2xl leading-relaxed">
-                  O auditor faz o cálculo aproximado da sua rescisão de trabalho com FGTS. Não é coletado nenhum dado do usuário.
+                <p className="text-secondary text-xs md:text-sm font-light mt-1.5 max-w-xl leading-relaxed">
+                  Cálculo aproximado da sua rescisão pelas regras da CLT. Nada é enviado
+                  a servidores — tudo roda no seu navegador.
                 </p>
               </div>
             </div>
-            <div className='flex items-center gap-4 w-full md:w-auto justify-between md:justify-end'>
-              <div className='flex items-center gap-2 px-3 py-1.5 bg-black/60 border border-gray-800 rounded-sm text-xs font-mono tracking-wider'>
-                <div className='w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]'></div>
-                <span className='text-blue-400 font-semibold'>SYSTEM READY</span>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 font-mono-sys text-[10px] tracking-widest text-secondary border border-white/10 bg-white/5 px-3 py-1.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--terminal-green))] animate-pulse" />
+                SYSTEM READY
               </div>
-              <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className='flex items-center gap-2 text-red-500 text-sm font-bold tracking-widest'>
-                <Activity className='w-4 h-4' />
-                <span>REC</span>
+              <motion.div
+                animate={{ opacity: [0.45, 1, 0.45] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="hidden sm:flex items-center gap-2 font-mono-sys text-[10px] tracking-widest text-destructive"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                REC
               </motion.div>
             </div>
           </div>
 
-          <div className='p-6 md:p-12 min-h-[500px] relative font-mono'>
+          {/* Corpo */}
+          <div className="relative z-10 px-5 py-10 md:p-12 min-h-[520px]">
             <AnimatePresence mode="wait">
               {step === 'input' && (
                 <motion.div
@@ -278,33 +314,37 @@ const AuditTerminal = () => {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 max-w-5xl mx-auto">
-                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-gray-800/50">
-                       <div>
-                        <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-purple-400 mb-2 md:mb-3">&gt; Nome do Gestor/Chefe</label>
+                  <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+                    {/* Identificação */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pb-10 mb-10 border-b border-white/5">
+                      <div>
+                        <FieldLabel htmlFor="managerName">Nome do gestor / chefe</FieldLabel>
                         <div className="relative">
-                          <Briefcase className="absolute left-4 top-3.5 md:top-4 w-4 h-4 md:w-5 md:h-5 text-gray-500" />
-                          <input 
-                            type="text" 
+                          <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary/60 pointer-events-none" />
+                          <input
+                            id="managerName"
+                            type="text"
                             name="managerName"
                             required
                             placeholder="Ex: Sr. Roberto"
-                            className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 pl-12 md:pl-14 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all font-mono rounded-sm"
+                            className="terminal-input field-with-icon"
                             value={formData.managerName}
                             onChange={handleInputChange}
                           />
                         </div>
                       </div>
+
                       <div>
-                        <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-purple-400 mb-2 md:mb-3">&gt; Seu Nome</label>
+                        <FieldLabel htmlFor="userName">Seu nome</FieldLabel>
                         <div className="relative">
-                          <User className="absolute left-4 top-3.5 md:top-4 w-4 h-4 md:w-5 md:h-5 text-gray-500" />
-                          <input 
-                            type="text" 
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary/60 pointer-events-none" />
+                          <input
+                            id="userName"
+                            type="text"
                             name="userName"
                             required
                             placeholder="Ex: Ana Silva"
-                            className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 pl-12 md:pl-14 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all font-mono rounded-sm"
+                            className="terminal-input field-with-icon"
                             value={formData.userName}
                             onChange={handleInputChange}
                           />
@@ -312,133 +352,172 @@ const AuditTerminal = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-8 md:space-y-10">
-                      <div>
-                        <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-red-500 mb-2 md:mb-3">&gt; Último Salário Bruto</label>
-                        <div className="relative">
-                          <span className="absolute left-4 top-3.5 md:top-4 text-gray-500 font-bold">R$</span>
-                          <input 
-                            type="number" 
-                            name="salary"
-                            required
-                            placeholder="0.00"
-                            className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 pl-12 md:pl-14 text-sm md:text-base focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all font-mono rounded-sm"
-                            value={formData.salary}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-8 md:gap-6">
-                        <DateSelector label="> Data de Admissão" name="admissionDate" value={formData.admissionDate} onChange={handleInputChange} />
-                        <DateSelector label="> Data de Saída" name="exitDate" value={formData.exitDate} onChange={handleInputChange} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-8 md:space-y-10">
-                       <div>
-                          <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400 mb-2 md:mb-3">&gt; Motivo da Rescisão</label>
+                    {/* Contrato */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+                      <div className="space-y-8">
+                        <div>
+                          <FieldLabel htmlFor="salary">Último salário bruto</FieldLabel>
                           <div className="relative">
-                            <select
-                              name="terminationReason"
-                              value={formData.terminationReason}
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono-sys text-xs text-secondary/70 pointer-events-none">
+                              R$
+                            </span>
+                            <input
+                              id="salary"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              name="salary"
+                              required
+                              placeholder="0,00"
+                              className="terminal-input field-with-icon"
+                              value={formData.salary}
                               onChange={handleInputChange}
-                              className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 text-sm md:text-base focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all font-mono appearance-none rounded-sm"
-                            >
-                              <option value="sem_justa_causa">Dispensado sem justa causa</option>
-                              <option value="com_justa_causa">Dispensado com justa causa</option>
-                              <option value="pedido_demissao">Pedido de demissão</option>
-                              <option value="acordo_comum">Demissão de comum acordo</option>
-                              <option value="exp_prazo">Fim contrato experiência (no prazo)</option>
-                              <option value="exp_antes">Fim contrato experiência (antes do prazo)</option>
-                              <option value="aposentadoria">Aposentadoria do empregado</option>
-                              <option value="falecimento">Falecimento do empregador</option>
-                            </select>
+                            />
                           </div>
-                       </div>
-
-                       <div>
-                          <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400 mb-2 md:mb-3">&gt; Aviso Prévio</label>
-                          <div className="relative">
-                            <select
-                              name="noticeType"
-                              value={formData.noticeType}
-                              onChange={handleInputChange}
-                              className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 text-sm md:text-base focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all font-mono appearance-none rounded-sm"
-                            >
-                              <option value="trabalhado">Trabalhado</option>
-                              <option value="indenizado">Indenizado pelo empregador</option>
-                              <option value="nao_cumprido">Não cumprido pelo empregado</option>
-                              <option value="dispensado">Dispensado</option>
-                            </select>
-                          </div>
-                       </div>
-
-                       <div className="flex items-center gap-4 p-4 border border-gray-700/80 bg-black/40 rounded-sm hover:border-gray-600 transition-colors">
-                          <input 
-                            type="checkbox" 
-                            id="vacationOverdue"
-                            name="vacationOverdue"
-                            checked={formData.vacationOverdue}
-                            onChange={handleInputChange}
-                            className="w-5 h-5 accent-red-500 bg-black border-gray-600 rounded cursor-pointer"
-                          />
-                          <label htmlFor="vacationOverdue" className="text-sm md:text-base text-gray-300 select-none cursor-pointer font-semibold">
-                            Possui férias vencidas?
-                          </label>
-                       </div>
-
-                      <div>
-                        <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-green-400 mb-2 md:mb-3">&gt; Valor Oferecido pela Empresa</label>
-                        <div className="relative">
-                          <span className="absolute left-4 top-3.5 md:top-4 text-gray-500 font-bold">R$</span>
-                          <input 
-                            type="number" 
-                            name="companyOffer"
-                            required
-                            placeholder="0.00"
-                            className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 pl-12 md:pl-14 text-sm md:text-base focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none transition-all font-mono rounded-sm"
-                            value={formData.companyOffer}
-                            onChange={handleInputChange}
-                          />
                         </div>
+
+                        <DateSelector
+                          label="Data de admissão"
+                          name="admissionDate"
+                          value={formData.admissionDate}
+                          onChange={handleInputChange}
+                        />
+                        <DateSelector
+                          label="Data de saída"
+                          name="exitDate"
+                          value={formData.exitDate}
+                          onChange={handleInputChange}
+                        />
                       </div>
 
-                      <div>
-                        <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-blue-400 mb-2 md:mb-3">&gt; Tom da Mensagem</label>
-                        <div className="relative">
-                          <MessageSquare className="absolute left-4 top-3.5 md:top-4 w-4 h-4 md:w-5 md:h-5 text-gray-500" />
+                      <div className="space-y-8">
+                        <div>
+                          <FieldLabel htmlFor="terminationReason">Motivo da rescisão</FieldLabel>
                           <select
-                            name="tone"
-                            value={formData.tone}
+                            id="terminationReason"
+                            name="terminationReason"
+                            value={formData.terminationReason}
                             onChange={handleInputChange}
-                            className="w-full bg-black/60 border border-gray-700 text-white p-3 md:p-4 pl-12 md:pl-14 text-sm md:text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all font-mono appearance-none cursor-pointer rounded-sm"
+                            className="terminal-select"
                           >
-                            <option value="professional">Profissional (Recomendado)</option>
-                            <option value="firm">Firme (Jurídico)</option>
-                            <option value="aggressive">Agressivo (Ultimato)</option>
+                            {TERMINATION_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
-                      </div>
 
-                      <div className="pt-4">
-                        <Button 
-                          type="submit"
-                          className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-7 md:py-8 rounded-md border-2 border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.7)] uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:-translate-y-1 text-sm md:text-lg"
-                        >
-                          <Calculator className="w-5 h-5 md:w-6 md:h-6" />
-                          Executar Auditoria
-                        </Button>
+                        {isFixedTerm && (
+                          <div>
+                            <DateSelector
+                              label="Término previsto do contrato"
+                              name="contractEndDate"
+                              value={formData.contractEndDate}
+                              onChange={handleInputChange}
+                            />
+                            <p className="mt-3 text-[11px] text-secondary/70 font-light leading-relaxed">
+                              A data que constava no contrato de experiência. Na rescisão
+                              antecipada, é ela que define a indenização do art. 479 — metade da
+                              remuneração dos dias que faltavam.
+                            </p>
+                          </div>
+                        )}
+
+                        <div>
+                          <FieldLabel htmlFor="noticeType">Aviso prévio</FieldLabel>
+                          <select
+                            id="noticeType"
+                            name="noticeType"
+                            value={formData.noticeType}
+                            onChange={handleInputChange}
+                            className="terminal-select"
+                          >
+                            <option value="trabalhado">Trabalhado</option>
+                            <option value="indenizado">Indenizado pelo empregador</option>
+                            <option value="nao_cumprido">Não cumprido pelo empregado</option>
+                            <option value="dispensado">Dispensado</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <FieldLabel htmlFor="companyOffer">Valor oferecido pela empresa</FieldLabel>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono-sys text-xs text-secondary/70 pointer-events-none">
+                              R$
+                            </span>
+                            <input
+                              id="companyOffer"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              name="companyOffer"
+                              required
+                              placeholder="0,00"
+                              className="terminal-input field-with-icon"
+                              value={formData.companyOffer}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <FieldLabel htmlFor="tone">Tom da mensagem</FieldLabel>
+                          <div className="relative">
+                            <MessageSquare className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary/60 pointer-events-none z-10" />
+                            <select
+                              id="tone"
+                              name="tone"
+                              value={formData.tone}
+                              onChange={handleInputChange}
+                              className="terminal-select field-with-icon"
+                            >
+                              <option value="professional">Profissional (recomendado)</option>
+                              <option value="firm">Firme (jurídico)</option>
+                              <option value="aggressive">Agressivo (ultimato)</option>
+                            </select>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </form>
-                  
-                  <div className="mt-12 pt-8 border-t border-gray-800/50 text-center">
-                    <p className="text-gray-500 text-xs md:text-sm max-w-2xl mx-auto flex items-center justify-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                      <span>AVISO: Esta é uma ferramenta de estimativa baseada em regras gerais da CLT.</span>
+
+                    {/* Férias vencidas */}
+                    <label
+                      htmlFor="vacationOverdue"
+                      className="mt-8 flex items-center gap-4 p-4 border border-white/10 bg-black hover:border-destructive/40 transition-colors cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        id="vacationOverdue"
+                        name="vacationOverdue"
+                        checked={formData.vacationOverdue}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 accent-[#A32A2A] bg-black cursor-pointer"
+                      />
+                      <span className="text-sm text-secondary font-light">
+                        Possuo férias vencidas (período completo não gozado)
+                      </span>
+                    </label>
+
+                    {/* Ação */}
+                    <div className="mt-10">
+                      <button
+                        type="submit"
+                        className="btn-primary-solid w-full h-16 md:h-[72px] text-xs md:text-sm glow-red-hover"
+                      >
+                        <Calculator className="w-5 h-5 mr-3 shrink-0" />
+                        EXECUTAR AUDITORIA
+                      </button>
+                    </div>
+
+                    <p className="mt-8 flex items-start justify-center gap-2.5 text-center text-xs text-secondary/70 font-light max-w-xl mx-auto leading-relaxed">
+                      <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                      <span>
+                        Ferramenta de estimativa baseada nas regras gerais da CLT. Convenções
+                        coletivas e acordos específicos podem alterar os valores.
+                      </span>
                     </p>
-                  </div>
+                  </form>
                 </motion.div>
               )}
 
@@ -449,27 +528,35 @@ const AuditTerminal = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center h-full min-h-[400px] md:min-h-[500px]"
+                  className="flex flex-col items-center justify-center min-h-[460px]"
                 >
-                  <div className="relative w-20 h-20 md:w-28 md:h-28 mb-10">
-                    <motion.div className="absolute inset-0 border-4 border-gray-800 rounded-full" />
-                    <motion.div 
-                      className="absolute inset-0 border-4 border-t-red-500 border-r-transparent border-b-transparent border-l-transparent rounded-full"
+                  <div className="relative w-24 h-24 mb-10">
+                    <div className="absolute inset-0 border border-white/10 rounded-full" />
+                    <motion.div
+                      className="absolute inset-0 border border-t-destructive border-r-transparent border-b-transparent border-l-transparent rounded-full"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
                     />
-                    <motion.div 
-                      className="absolute inset-4 border-4 border-t-transparent border-r-blue-500 border-b-transparent border-l-transparent rounded-full"
+                    <motion.div
+                      className="absolute inset-5 border border-dashed border-white/15 rounded-full"
                       animate={{ rotate: -360 }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
                     />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Calculator className="w-6 h-6 text-destructive" />
+                    </div>
                   </div>
-                  <div className="font-mono text-center space-y-3">
-                    <motion.p animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-red-500 font-bold uppercase tracking-widest text-sm md:text-lg">
-                      Auditando valores...
+
+                  <div className="font-mono-sys text-center space-y-2.5 text-xs md:text-sm tracking-widest">
+                    <motion.p
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="text-destructive uppercase"
+                    >
+                      Auditando valores
                     </motion.p>
-                    <p className="text-gray-500 text-sm md:text-base">Consultando tabelas CLT...</p>
-                    <p className="text-gray-500 text-sm md:text-base">Gerando minuta {formData.tone.toUpperCase()}...</p>
+                    <p className="text-secondary/70">&gt; consultando tabelas CLT</p>
+                    <p className="text-secondary/70">&gt; gerando minuta [{formData.tone.toUpperCase()}]</p>
                   </div>
                 </motion.div>
               )}
@@ -477,148 +564,231 @@ const AuditTerminal = () => {
               {step === 'result' && results && (
                 <motion.div
                   key="result"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-5xl mx-auto"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="max-w-4xl mx-auto"
                 >
-                  <div className="mb-8">
-                    <div className="bg-[#0a0a0a] border border-gray-700/80 p-6 md:p-10 relative group hover:border-red-500/50 transition-colors rounded-sm shadow-lg">
-                      <div className="absolute top-0 right-0 p-4 opacity-30">
-                        <Calculator className="w-10 h-10 md:w-16 md:h-16 text-gray-600 group-hover:text-red-500/30 transition-colors" />
-                      </div>
-                      <h3 className="text-gray-400 text-xs md:text-sm uppercase tracking-widest mb-6 font-bold border-b border-gray-800 pb-3">
-                        Relatório Financeiro
-                      </h3>
-                      
-                      <div className="space-y-6">
-                        <div className="flex justify-between items-end">
-                          <span className="text-gray-400 text-sm md:text-base">Valor Estimado CLT:</span>
-                          <span className="text-xl md:text-2xl text-white font-bold font-mono">
-                            R$ {results.estimatedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-end">
-                          <span className="text-gray-400 text-sm md:text-base">Oferta da Empresa:</span>
-                          <span className="text-xl md:text-2xl text-yellow-500 font-mono font-bold">
-                            R$ {parseFloat(formData.companyOffer).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        
-                        <div className="my-6 border-t border-dashed border-gray-700"></div>
-                        
-                        <div className="bg-red-950/20 border border-red-900/40 p-5 md:p-6 rounded-sm">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-red-400 text-sm md:text-base font-bold uppercase tracking-wide">Diferença Encontrada</span>
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                  {/* Relatório financeiro */}
+                  <div className="lab-card p-6 md:p-10 mb-6 relative overflow-hidden">
+                    <p className="font-mono-sys text-[10px] tracking-[0.25em] text-secondary mb-6 pb-4 border-b border-white/5 uppercase">
+                      <span className="text-destructive mr-2">&gt;</span>
+                      Relatório financeiro
+                    </p>
+
+                    {/* Composição verba a verba — o que sustenta o total */}
+                    <div className="mb-8">
+                      <p className="font-mono-sys text-[10px] tracking-[0.2em] text-secondary/60 uppercase mb-1">
+                        Composição — {results.reasonLabel}
+                      </p>
+                      {results.details.map((item) => (
+                        <ReportRow
+                          key={item.key}
+                          label={item.label}
+                          hint={item.hint}
+                          size="sm"
+                          tone={item.value < 0 ? 'negative' : 'muted'}
+                          value={`${item.value < 0 ? '− ' : ''}R$ ${formatBRL(Math.abs(item.value))}`}
+                        />
+                      ))}
+                    </div>
+
+                    <ReportRow label="Valor estimado pela CLT" value={`R$ ${formatBRL(results.estimatedValue)}`} />
+                    <ReportRow label="Oferta da empresa" value={`R$ ${formatBRL(formData.companyOffer)}`} tone="muted" />
+
+                    {hasShortfall ? (
+                      <div className="mt-8 border border-destructive/40 bg-destructive/[0.07] p-6 md:p-8 rounded-xl relative overflow-hidden">
+                        <div className="absolute -top-20 -right-20 w-56 h-56 bg-destructive/20 rounded-full blur-[80px] pointer-events-none" />
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between gap-4 mb-3">
+                            <span className="font-mono-sys text-[10px] md:text-[11px] tracking-[0.2em] text-destructive uppercase">
+                              Diferença encontrada
+                            </span>
+                            <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
                           </div>
-                          <div className="text-3xl md:text-5xl text-red-500 font-bold font-mono tracking-tighter my-3">
-                            - R$ {Math.abs(results.difference).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </div>
-                          <p className="text-xs md:text-sm text-red-400/80 mt-2 uppercase font-semibold">
-                            * Valor que você está deixando de receber
+                          <p className="font-mono-sys text-4xl md:text-6xl font-bold text-destructive tracking-tighter text-glow-red tabular-nums leading-none">
+                            R$ {formatBRL(Math.abs(results.difference))}
+                          </p>
+                          <p className="mt-4 text-xs md:text-sm text-secondary font-light">
+                            Valor que você pode estar deixando de receber.
                           </p>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="mt-8 border border-white/10 bg-white/[0.03] p-6 md:p-8 rounded-xl">
+                        <div className="flex items-center justify-between gap-4 mb-3">
+                          <span className="font-mono-sys text-[10px] md:text-[11px] tracking-[0.2em] text-[hsl(var(--terminal-green))] uppercase">
+                            Sem diferença a cobrar
+                          </span>
+                          <CheckCircle2 className="w-5 h-5 text-[hsl(var(--terminal-green))] shrink-0" />
+                        </div>
+                        <p className="font-mono-sys text-3xl md:text-4xl font-bold text-foreground tracking-tighter tabular-nums leading-none">
+                          R$ {formatBRL(Math.abs(results.difference))}
+                        </p>
+                        <p className="mt-4 text-xs md:text-sm text-secondary font-light">
+                          {results.difference === 0
+                            ? 'A oferta da empresa bate exatamente com a estimativa da CLT.'
+                            : 'A oferta da empresa está acima da estimativa da CLT nesse valor.'}{' '}
+                          Ainda assim, vale conferir a convenção coletiva da sua categoria.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <p className="text-[11px] md:text-xs text-gray-500 font-mono mb-8 leading-relaxed">
-                    *Nota de Sistema: Os valores e minutas gerados acima constituem uma simulação estimada com base nos dados fornecidos pelo usuário e na legislação trabalhista corrente. Este relatório possui caráter puramente informativo e pedagógico, não substituindo assistência jurídica formal.
+                  {/* O que a lei deixa de fora, e o que ela não decide */}
+                  {results.notes.length > 0 && (
+                    <div className="lab-card p-6 md:p-8 mb-6">
+                      <p className="font-mono-sys text-[10px] tracking-[0.25em] text-secondary mb-5 pb-4 border-b border-white/5 uppercase">
+                        <span className="text-destructive mr-2">&gt;</span>
+                        Observações sobre este cálculo
+                      </p>
+                      <ul className="space-y-4">
+                        {results.notes.map((note) => (
+                          <li
+                            key={note}
+                            className="flex gap-3 text-[13px] md:text-sm text-secondary font-light leading-relaxed"
+                          >
+                            <span className="font-mono-sys text-[10px] text-destructive shrink-0 mt-1.5">
+                              &gt;
+                            </span>
+                            {note}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] md:text-xs text-secondary/60 font-light leading-relaxed mb-8">
+                    Nota de sistema: os valores e a minuta acima são uma simulação estimada a
+                    partir dos dados informados e da legislação trabalhista vigente. O relatório
+                    tem caráter informativo e pedagógico e não substitui assistência jurídica.
                   </p>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                    className="mb-8 bg-[#111] border-2 border-yellow-500/50 rounded-lg p-6 md:p-8 relative overflow-hidden group hover:border-yellow-500/80 transition-all cursor-pointer shadow-lg"
-                    onClick={scrollToFGTS}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-start gap-4 md:gap-6 mb-4">
-                        <div className="mt-1 bg-yellow-500/10 p-2 rounded-full border border-yellow-500/30">
-                          <Unlock className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
+                  {/* Oferta condicional — antecipação FGTS */}
+                  {(results.terminationReason === 'pedido_demissao' || results.terminationReason === 'com_justa_causa') && (
+                    <motion.aside
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="mb-6 lab-card lab-card-alert p-6 md:p-8 relative overflow-hidden glow-card-hover transition-all duration-300"
+                      aria-labelledby="credliber-offer-title"
+                    >
+                      <div className="absolute -top-24 -right-24 w-64 h-64 bg-destructive/10 rounded-full blur-[90px] pointer-events-none" />
+                      <div className="relative z-10 flex flex-col md:flex-row items-start gap-5 md:gap-7">
+                        <div className="w-12 h-12 shrink-0 rounded-xl border border-destructive/25 bg-destructive/10 flex items-center justify-center">
+                          <Unlock className="w-5 h-5 text-destructive" aria-hidden="true" />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="text-yellow-500 font-mono font-bold text-sm md:text-base uppercase tracking-wider mb-3 flex items-center gap-2">
-                            [SYSTEM_NOTICE] OPORTUNIDADE DE SAQUE IMEDIATO
-                            <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                              💰
-                            </motion.span>
-                          </h3>
-                          <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-6 font-light">
-                            Não espere acordos demorados. Verificamos que você pode ter saldo disponível para antecipação do FGTS agora mesmo.
+                        <div className="flex-1 w-full">
+                          <p className="font-mono-sys text-[10px] tracking-[0.2em] text-destructive uppercase mb-3">
+                            Opcional · Produto de crédito
                           </p>
-                          <Button
-                            onClick={scrollToFGTS}
-                            className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm md:text-base py-3 px-6 md:py-6 md:px-8 rounded-md border border-yellow-600 shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:shadow-[0_0_25px_rgba(234,179,8,0.7)] transition-all hover:scale-[1.02] uppercase tracking-widest w-full md:w-auto"
+                          <h3 id="credliber-offer-title" className="text-xl md:text-2xl font-medium text-foreground mb-3">
+                            Antecipação do saque-aniversário
+                          </h3>
+                          <p className="text-sm md:text-base text-secondary font-light leading-relaxed mb-6">
+                            Ficou com o FGTS preso por causa do tipo de demissão? É possível
+                            antecipar as parcelas do saque-aniversário. Serviço de terceiro,
+                            sujeito a análise e a juros — não faz parte dos seus direitos acima.
+                          </p>
+                          <a
+                            href={LINKS.CREDLIBER_PORTAL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-ghost-outline h-12 px-7 text-[11px] w-full md:w-auto glow-red-hover"
                           >
-                            SIMULAR ANTECIPAÇÃO &gt;
-                          </Button>
+                            FALAR COM O ATENDIMENTO
+                          </a>
                         </div>
                       </div>
+                    </motion.aside>
+                  )}
+
+                  {/* Oferta condicional — kit de recolocação */}
+                  {results.terminationReason === 'sem_justa_causa' && (
+                    <motion.aside
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="mb-6 lab-card p-6 md:p-8 relative overflow-hidden glow-card-hover transition-all duration-300"
+                      aria-labelledby="career-kit-offer-title"
+                    >
+                      <div className="relative z-10 flex flex-col md:flex-row items-start gap-5 md:gap-7">
+                        <div className="w-12 h-12 shrink-0 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center">
+                          <Briefcase className="w-5 h-5 text-foreground" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1 w-full">
+                          <p className="font-mono-sys text-[10px] tracking-[0.2em] text-secondary uppercase mb-3">
+                            Opcional · Material de apoio
+                          </p>
+                          <h3 id="career-kit-offer-title" className="text-xl md:text-2xl font-medium text-foreground mb-3">
+                            Kit para voltar ao mercado
+                          </h3>
+                          <p className="text-sm md:text-base text-secondary font-light leading-relaxed mb-6">
+                            Foi demitido e precisa se recolocar? O Kit Currículo Perfeito
+                            + Guia de Entrevistas sai por R$ 9,90.
+                          </p>
+                          <a
+                            href={LINKS.CAREER_KIT_PIX}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-primary-solid h-12 px-7 text-[11px] w-full md:w-auto glow-red-hover"
+                          >
+                            COMPRAR POR PIX — R$ 9,90
+                          </a>
+                        </div>
+                      </div>
+                    </motion.aside>
+                  )}
+
+                  {/* Minuta gerada */}
+                  <div className="lab-card p-6 md:p-10 mb-8">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-white/5">
+                      <p className="font-mono-sys text-[10px] tracking-[0.25em] text-secondary uppercase">
+                        <span className="text-destructive mr-2">&gt;</span>
+                        Minuta gerada · {formData.tone}
+                      </p>
+                      <span className="font-mono-sys text-[9px] tracking-widest text-secondary border border-white/10 bg-white/5 px-3 py-1.5 rounded-full">
+                        PRONTA PARA WHATSAPP
+                      </span>
                     </div>
-                  </motion.div>
 
-                  <div className="mb-10">
-                    <div className="bg-[#0a0a0a] border border-gray-700/80 p-6 md:p-10 flex flex-col relative group hover:border-blue-500/50 transition-colors rounded-sm shadow-lg">
-                      <div className="absolute top-0 right-0 p-4 opacity-30">
-                        <Terminal className="w-10 h-10 md:w-16 md:h-16 text-gray-600 group-hover:text-blue-500/30 transition-colors" />
-                      </div>
-                      <h3 className="text-gray-400 text-xs md:text-sm uppercase tracking-widest mb-6 font-bold border-b border-gray-800 pb-3 flex items-center justify-between flex-wrap gap-3">
-                        <span>Mensagem Gerada ({formData.tone})</span>
-                        <span className="text-[10px] md:text-xs bg-blue-950/40 text-blue-400 px-3 py-1 rounded-sm border border-blue-900/60 font-semibold tracking-wide">WhatsApp Ready</span>
-                      </h3>
-                      
-                      <div className="flex-grow bg-[#050505] border border-gray-800 p-5 md:p-6 font-mono text-sm md:text-base text-gray-300 leading-relaxed md:leading-loose whitespace-pre-wrap mb-6 font-light rounded-sm shadow-inner">
-                        {results.aiMessage}
-                      </div>
-
-                      <div className="space-y-4">
-                        <Button 
-                          onClick={() => copyToClipboard(results.aiMessage)}
-                          variant="outline"
-                          className="w-full border-gray-700 hover:bg-gray-800 hover:text-white text-gray-300 hover:border-gray-500 transition-all text-sm md:text-base py-6 rounded-md font-semibold tracking-wide"
-                        >
-                          <Copy className="w-5 h-5 mr-3" />
-                          Copiar Mensagem
-                        </Button>
-
-                        <a
-                          href={LINKS.CREDLIBER_PORTAL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-transparent border-2 text-[#FFC107] hover:text-[#FFD54F] border-[#FFC107] hover:border-[#FFD54F] font-mono font-bold text-sm md:text-base py-4 md:py-6 px-4 rounded-md transition-all hover:shadow-[0_0_20px_rgba(255,193,7,0.4)] flex items-center justify-center uppercase tracking-widest pulse-animation"
-                        >
-                          &gt; INICIAR_SAQUE_FGTS_AGORA
-                        </a>
-                      </div>
+                    <div className="bg-black border border-white/10 p-5 md:p-7 font-mono-sys text-[13px] md:text-sm text-secondary leading-loose whitespace-pre-wrap mb-6">
+                      {results.aiMessage}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(results.aiMessage)}
+                      className="btn-ghost-outline w-full h-14 text-[11px] md:text-xs glow-red-hover"
+                    >
+                      <Copy className="w-4 h-4 mr-3" />
+                      COPIAR MENSAGEM
+                    </button>
                   </div>
 
-                  <div className="text-center pt-4">
-                    <Button 
-                      variant="ghost" 
+                  <div className="text-center">
+                    <button
+                      type="button"
                       onClick={handleNewAudit}
-                      className="text-gray-400 hover:text-white hover:bg-white/10 font-mono text-sm md:text-base uppercase tracking-widest transition-all py-6 px-8 rounded-md"
+                      className="inline-flex items-center font-mono-sys text-[11px] tracking-[0.2em] text-secondary hover:text-foreground transition-colors py-3 px-6 uppercase"
                     >
-                      <RefreshCw className="w-5 h-5 mr-3" />
-                      Nova Auditoria
-                    </Button>
+                      <RefreshCw className="w-4 h-4 mr-3" />
+                      Nova auditoria
+                    </button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <div className='bg-[#0a0a0a] border-t border-gray-800 px-5 py-3 md:px-8 md:py-4'>
-            <div className='flex items-center justify-between text-[10px] md:text-xs text-gray-500 font-mono tracking-wider'>
+          {/* Rodapé do terminal */}
+          <div className="relative z-30 border-t border-white/5 bg-card/60 px-5 py-3.5 md:px-8">
+            <div className="flex items-center justify-between font-mono-sys text-[10px] tracking-widest text-secondary/70">
               <span className="flex items-center gap-2">
-                <span className="animate-pulse text-green-500 font-bold">_</span> 
-                {step === 'input' ? 'Waiting data...' : step === 'processing' ? 'Processing...' : 'Audit done.'}
+                <span className="caret" aria-hidden="true" />
+                {statusLabel}
               </span>
-              <span className='text-gray-600 hidden sm:inline font-semibold'>System ID: LGT-9000</span>
+              <span className="hidden sm:inline">SYSTEM ID: LGT-9000</span>
             </div>
           </div>
         </motion.div>

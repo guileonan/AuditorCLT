@@ -1,55 +1,71 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal } from 'lucide-react';
+import SectionMarker from '@/components/SectionMarker';
 import { useCarousel } from '@/hooks/useCarousel';
-import { SYSTEM_METRICS_LOGS, METRICS } from '@/constants/appConstants';
+import { SYSTEM_METRICS_LOGS, METRICS, VERBAS_CALCULADAS } from '@/constants/appConstants';
+import { createFadeUpVariant, inView } from '@/lib/motion';
 
 const SystemMetrics = () => {
   const currentIndex = useCarousel(SYSTEM_METRICS_LOGS.length, METRICS.CAROUSEL_INTERVAL_MS);
   const activeLog = SYSTEM_METRICS_LOGS[currentIndex];
 
   return (
-    <section className="bg-[#050505] py-16 md:py-24 px-4 md:px-8 font-mono border-y border-[#222222]">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col gap-6 md:gap-8"
-        >
-          <div className="border border-[#333333] p-3 md:p-4 inline-flex items-center gap-3 self-start bg-[#0a0a0a] rounded-sm">
-            <Terminal className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
-            <h2 className="text-gray-400 text-xs md:text-sm font-semibold uppercase tracking-[0.2em] m-0">
-              &gt; [SYSTEM_METRICS] STATUS DE OPERAÇÃO
-            </h2>
-          </div>
+    <section className="relative py-20 md:py-28 border-t border-white/5 bg-card/40">
+      <div className="max-w-6xl mx-auto px-6">
+        <SectionMarker slug="ESPECIFICACAO" title="O que a auditoria calcula" className="mb-12" />
 
-          <div className="border border-[#333333] p-6 md:p-10 bg-[#0a0a0a] relative overflow-hidden flex items-center justify-center md:justify-start rounded-sm shadow-lg">
-            <div className="absolute inset-0 pointer-events-none opacity-10" style={{ background: 'linear-gradient(rgba(255, 255, 0, 0.15) 50%, rgba(0, 0, 0, 0.6) 50%)', backgroundSize: '100% 4px' }}></div>
-            <p 
-              className="text-[#FFFF00] text-xl md:text-3xl lg:text-4xl font-extrabold tracking-wide relative z-10 text-center md:text-left animate-pulse-neon leading-tight"
-            >
-              &gt; {METRICS.TOTAL_AUDITS} AUDITORIAS TRABALHISTAS CONCLUÍDAS ESTE MÊS
-            </p>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6 lg:gap-8 items-stretch">
+          {/* Contador */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={createFadeUpVariant(0.05, 0.7)}
+            className="lab-card p-8 md:p-10 flex flex-col justify-center relative overflow-hidden glow-card-hover transition-all duration-300"
+          >
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-destructive/10 rounded-full blur-[90px] pointer-events-none" />
 
-          <div className="relative min-h-[120px] md:min-h-[140px] flex items-center w-full">
-            <div 
-              key={currentIndex}
-              className="border border-[#333333] bg-[#0a0a0a] p-5 md:p-8 text-sm md:text-base lg:text-lg text-gray-300 w-full rounded-sm shadow-md animate-fade-in-out flex items-center"
-            >
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 w-full">
-                <span className="text-[#FF0000] font-bold tracking-wider whitespace-nowrap bg-red-950/30 px-3 py-1.5 rounded-sm border border-red-900/50">
-                  [CASE_LOG #{activeLog?.id}]
-                </span>
-                <span className="leading-relaxed font-light tracking-wide">
-                  {activeLog?.text}
-                </span>
-              </div>
+            <div className="relative z-10">
+              <p className="font-mono-sys text-[10px] tracking-[0.25em] text-secondary mb-4">
+                VERBAS CONSIDERADAS NO CÁLCULO
+              </p>
+              <p className="text-6xl md:text-7xl font-bold tracking-tighter text-foreground leading-none">
+                {VERBAS_CALCULADAS.length}
+              </p>
+              <div className="mt-6 h-[2px] w-20 bg-gradient-to-r from-destructive to-transparent" />
+
+              <ul className="mt-7 space-y-2.5">
+                {VERBAS_CALCULADAS.map((verba) => (
+                  <li key={verba} className="flex items-baseline gap-3 text-sm text-secondary font-light">
+                    <span className="font-mono-sys text-[10px] text-destructive shrink-0">&gt;</span>
+                    {verba}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+
+          {/* Log rotativo */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={createFadeUpVariant(0.15, 0.7)}
+            className="lab-card p-7 md:p-9 relative overflow-hidden scanlines flex items-center min-h-[190px]"
+          >
+            <div key={currentIndex} className="animate-log-cycle w-full relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="font-mono-sys text-[10px] tracking-widest text-destructive bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-full">
+                  [{activeLog?.id}]
+                </span>
+                <span className="h-[1px] flex-1 bg-white/5" />
+              </div>
+              <p className="text-sm md:text-base text-secondary font-light leading-relaxed">
+                {activeLog?.text}
+              </p>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

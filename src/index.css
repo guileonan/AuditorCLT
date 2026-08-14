@@ -1,188 +1,319 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap');
+/* =========================================================================
+   auditorCLT — Design System
+   Herdado do site NexumLab (nexumlab.net.br): mesma paleta, mesma tipografia,
+   mesmas utilities. A divergência é de densidade e hierarquia, não de marca.
+   ========================================================================= */
 
 @layer base {
-  :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-    
-    --primary: 45 93% 47%;
-    --primary-foreground: 0 0% 0%;
-    
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-    
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 70%;
-    
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 0%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 45 93% 47%;
-    
-    --radius: 0.75rem;
+  :root, .dark {
+    /* Base Colors — HSL Format */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 59% 40%; /* #A32A2A — vermelho NexumLab */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 53%;
+    --muted-foreground: 0 0% 80%;
+
+    --accent: 0 59% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 59% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 12%;
+    --input: 0 0% 10%;
+    --ring: 0 59% 40%;
+
+    --radius: 0.5rem;
+
+    /* Terminal Colors */
+    --terminal-red: 0 59% 40%;      /* #A32A2A */
+    --terminal-green: 120 100% 50%; /* #00FF00 — reservado a status de sistema */
+
+    /* Custom Glow Tokens */
+    --glow-red: 0 59% 40%;
+    --glow-subtle: 0 0% 100%;
   }
 
-  .dark {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-    
-    --primary: 45 93% 47%;
-    --primary-foreground: 0 0% 0%;
-    
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-    
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 70%;
-    
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 0%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 45 93% 47%;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Outfit", system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    line-height: 1.8;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    @apply bg-accent/40 text-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
   }
 
   a, button, input, select, textarea {
-    @apply transition-all duration-200 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary;
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary;
   }
-}
 
-body {
-  @apply bg-background text-foreground;
-  font-family: 'Roboto Mono', monospace;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-track {
-  background: hsl(var(--background));
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
-  border-radius: 5px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--border));
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
+  /* Acessibilidade: prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
-  50% {
-    transform: scale(1.02);
-    box-shadow: 0 0 40px rgba(234, 179, 8, 0.7);
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--background)); }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 5px;
   }
-}
-
-.pulse-animation {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse-border {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-@keyframes pulse-neon {
-  0%, 100% {
-    opacity: 1;
-    text-shadow: 0 0 8px rgba(255, 255, 0, 0.4), 0 0 2px rgba(255, 255, 0, 0.2);
-  }
-  50% {
-    opacity: 0.85;
-    text-shadow: 0 0 16px rgba(255, 255, 0, 0.7), 0 0 4px rgba(255, 255, 0, 0.4);
-  }
-}
-
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(4px); }
-  15% { opacity: 1; transform: translateY(0); }
-  85% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-4px); }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--terminal-red)); }
 }
 
 @layer utilities {
-  .fintech-shadow-soft {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
-  
-  .fintech-shadow-glow {
-    box-shadow: 0 0 30px rgba(234, 179, 8, 0.3);
-  }
-  
-  .fintech-rounded {
-    border-radius: var(--radius);
-  }
-  
-  .fintech-rounded-lg {
-    border-radius: calc(var(--radius) + 4px);
-  }
-  
-  .fintech-text-silver {
-    color: hsl(var(--muted-foreground));
+  /* ---------- Tipografia utilitária ---------- */
+  .font-mono-sys {
+    font-family: "JetBrains Mono", "Courier New", monospace;
   }
 
-  .logo-wrapper {
-    @apply relative block overflow-hidden transition-transform duration-300 focus:outline-none focus:ring-2 focus:ring-destructive rounded;
-    aspect-ratio: 3 / 1; 
-  }
-  
-  .header-logo-container {
-    @apply w-[100px] md:w-[140px] h-auto;
-  }
-  
-  .footer-logo-container {
-    @apply w-[100px] md:w-[120px] h-auto;
+  /* ---------- Glows (NexumLab) ---------- */
+  .glow-red {
+    box-shadow: 0 0 15px 0px hsl(var(--terminal-red) / 0.5);
   }
 
-  .logo-image {
-    @apply w-full h-full object-contain transition-transform duration-300 hover:scale-105 bg-transparent block;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+  .glow-red-hover:hover {
+    box-shadow: 0 0 25px 5px hsl(var(--terminal-red) / 0.7);
+    border-color: hsl(var(--terminal-red) / 1);
   }
 
-  .animate-pulse-neon {
-    animation: pulse-neon 3s ease-in-out infinite;
+  .glow-card-hover:hover {
+    box-shadow: 0 0 10px 0px hsl(var(--terminal-red) / 0.4);
+    border-color: hsl(var(--terminal-red) / 0.8);
   }
 
-  .animate-fade-in-out {
-    animation: fadeInOut 5s ease-in-out infinite;
+  .glow-subtle {
+    box-shadow: 0 0 15px 0px hsl(var(--glow-subtle) / 0.05);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 30px hsl(var(--terminal-red) / 0.6);
+  }
+
+  .text-glow-green {
+    text-shadow: 0 0 15px hsl(var(--terminal-green) / 0.8);
+  }
+
+  .glass-morphism {
+    @apply bg-background/70 backdrop-blur-md border-b border-white/5;
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--accent) / 0.5) 0%, transparent 50%, transparent 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .pulse-glow {
+    animation: pulse-glow-anim 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-glow-anim {
+    0%, 100% { box-shadow: 0 0 30px 0px hsl(var(--accent) / 0.05); }
+    50%      { box-shadow: 0 0 50px 0px hsl(var(--accent) / 0.2); }
+  }
+
+  .shimmer { position: relative; overflow: hidden; }
+
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.02) 20%,
+      rgba(255, 255, 255, 0.05) 60%,
+      rgba(255, 255, 255, 0)
+    );
+    animation: shimmer-anim 3s infinite;
+  }
+
+  @keyframes shimmer-anim {
+    100% { transform: translateX(100%); }
+  }
+
+  /* ---------- Superfícies compartilhadas ---------- */
+  .grid-overlay {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 1) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .lab-card {
+    @apply bg-gradient-to-br from-card to-background border border-white/5 rounded-2xl;
+  }
+
+  /* Modificadores declarados DEPOIS de .lab-card — mesma especificidade,
+     então a ordem de origem é o que decide. Não usar `border-destructive/30`
+     direto junto de `lab-card`: a classe base venceria. */
+  .lab-card-alert {
+    border-color: hsl(var(--destructive) / 0.3);
+  }
+
+  /* ---------- Controles de formulário (padrão terminal) ---------- */
+  .terminal-input {
+    @apply w-full bg-black border border-[#333333] text-white py-3.5
+           focus:border-primary focus:outline-none transition-all duration-300
+           placeholder:text-secondary/50 rounded-none font-mono-sys text-sm;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .terminal-select {
+    @apply w-full bg-black border border-[#333333] text-white py-3.5
+           focus:border-primary focus:outline-none transition-all duration-300
+           rounded-none font-mono-sys text-sm appearance-none cursor-pointer;
+    padding-left: 1rem;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A32A2A' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+  }
+
+  .terminal-select option {
+    background-color: #000;
+    color: #fff;
+  }
+
+  /* Abre espaço para o ícone à esquerda. Declarado DEPOIS de .terminal-input
+     e .terminal-select para vencer o padding-left da classe base. */
+  .field-with-icon {
+    padding-left: 3rem;
+  }
+
+  /* ---------- Botões ---------- */
+  .btn-primary-solid {
+    @apply bg-foreground text-background hover:bg-white font-mono-sys tracking-widest
+           rounded-none transition-all duration-300 border border-transparent
+           shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:text-white
+           cursor-pointer inline-flex items-center justify-center;
+  }
+
+  .btn-ghost-outline {
+    @apply bg-transparent border border-border text-foreground font-mono-sys tracking-widest
+           rounded-none transition-all duration-300 hover:border-destructive hover:text-white
+           cursor-pointer inline-flex items-center justify-center;
+  }
+
+  /* ---------- Assinatura do auditorCLT: o terminal ---------- */
+  .scanlines::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0.04;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.9) 0px,
+      rgba(255, 255, 255, 0.9) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  .scan-sweep::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 140px;
+    pointer-events: none;
+    z-index: 21;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      hsl(var(--terminal-red) / 0.07) 50%,
+      transparent 100%
+    );
+    animation: scan-sweep-anim 7s linear infinite;
+  }
+
+  @keyframes scan-sweep-anim {
+    0%   { top: -140px; }
+    100% { top: 100%; }
+  }
+
+  .caret::after {
+    content: "_";
+    color: hsl(var(--terminal-green));
+    animation: caret-blink 1.1s step-end infinite;
+  }
+
+  @keyframes caret-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
+  }
+
+  /* ---------- Animações ---------- */
+  @keyframes fade-in-up {
+    0%   { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.8s cubic-bezier(0, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes log-cycle {
+    0%        { opacity: 0; transform: translateY(6px); }
+    12%, 88%  { opacity: 1; transform: translateY(0); }
+    100%      { opacity: 0; transform: translateY(-6px); }
+  }
+
+  .animate-log-cycle {
+    animation: log-cycle 5s ease-in-out infinite;
   }
 }

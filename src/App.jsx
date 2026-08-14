@@ -1,51 +1,50 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet';
-import AlertBar from '@/components/AlertBar';
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import SystemMetrics from '@/components/SystemMetrics';
 import AuditTerminal from '@/components/AuditTerminal';
-import FGTSSection from '@/components/FGTSSection';
 import EducationalContent from '@/components/EducationalContent';
 import Footer from '@/components/Footer';
+import StickyCTA from '@/components/StickyCTA';
+import { Toaster } from '@/components/ui/toaster';
 
 function App() {
-  const fgtsSectionRef = useRef(null);
-
-  const scrollToFGTS = () => {
-    if (fgtsSectionRef.current) {
-      const yOffset = -80;
-      const y = fgtsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      
-      window.scrollTo({
-        top: y,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  // NOTE: All logo assets and image utilities have been integrated.
-  // We use the direct permanent URLs explicitly provided. Fallback logic is handled inside respective components via src/lib/imageUtils.js
-  
   return (
     <>
       <Helmet>
-        <title>auditorCLT - Audite suas verbas rescisórias com inteligência artificial.</title>
-        <meta name="description" content="Audite suas verbas rescisórias com I.A. e gere cobranças jurídicas automaticamente. Conectado à API GPT-4 para análise em tempo real." />
+        <html lang="pt-BR" />
+        <title>auditorCLT — Confira suas verbas rescisórias pela CLT</title>
+        <meta
+          name="description"
+          content="Calcule suas verbas rescisórias pelas regras da CLT, compare com a oferta da empresa e gere a mensagem de cobrança pronta para enviar. Sem cadastro."
+        />
+        <meta name="theme-color" content="#000000" />
+        <link rel="canonical" href="https://auditorclt.nexumlab.net.br/" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="pt_BR" />
+        <meta property="og:site_name" content="auditorCLT" />
+        <meta property="og:title" content="auditorCLT — Confira suas verbas rescisórias pela CLT" />
+        <meta
+          property="og:description"
+          content="Calcule suas verbas rescisórias pelas regras da CLT, compare com a oferta da empresa e gere a mensagem de cobrança pronta para enviar."
+        />
+        <meta property="og:url" content="https://auditorclt.nexumlab.net.br/" />
+        <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
-      
-      <AlertBar onScrollToFGTS={scrollToFGTS} />
-      
-      <div className='min-h-screen bg-[#0a0a0a] text-white font-mono pt-12 md:pt-16'>
+
+      <div className="min-h-screen bg-background text-foreground">
         <Header />
-        <HeroSection />
-        <SystemMetrics />
-        <AuditTerminal />
-        <div ref={fgtsSectionRef}>
-          <FGTSSection />
-        </div>
-        <EducationalContent />
+        <main>
+          <HeroSection />
+          <SystemMetrics />
+          <AuditTerminal />
+          <EducationalContent />
+        </main>
         <Footer />
+        <StickyCTA />
+        <Toaster />
       </div>
     </>
   );

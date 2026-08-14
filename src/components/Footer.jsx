@@ -1,126 +1,142 @@
 import React, { memo } from 'react';
-import { Shield, AlertTriangle, Lock } from 'lucide-react';
-import { ASSETS } from '@/constants/appConstants';
+import { motion } from 'framer-motion';
+import { AlertTriangle, ArrowUpRight, Cpu, Lock, Shield } from 'lucide-react';
+import { LINKS } from '@/constants/appConstants';
+import BrandLogo from '@/components/BrandLogo';
 
-const CpuIcon = ({ className }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <rect width="16" height="16" x="4" y="4" rx="2" />
-    <rect width="6" height="6" x="9" y="9" rx="1" />
-    <path d="M15 2v2" />
-    <path d="M15 20v2" />
-    <path d="M2 15h2" />
-    <path d="M2 9h2" />
-    <path d="M20 15h2" />
-    <path d="M20 9h2" />
-    <path d="M9 2v2" />
-    <path d="M9 20v2" />
-  </svg>
-);
+const LEGAL_ITEMS = [
+  {
+    title: '1. Natureza informativa',
+    body: 'As informações, cálculos e minutas gerados por esta ferramenta têm caráter estritamente educativo e informativo. Eles representam simulações baseadas em dados inseridos pelo usuário e não devem ser interpretados como documentos oficiais ou sentenças judiciais.',
+  },
+  {
+    title: '2. Ausência de assessoria jurídica',
+    body: 'O uso desta plataforma NÃO constitui relação advogado-cliente nem substitui a consulta jurídica profissional. A complexidade das leis trabalhistas envolve convenções coletivas, acordos individuais e particularidades fáticas que uma ferramenta automatizada não captura integralmente.',
+  },
+  {
+    title: '3. Isenção de responsabilidade',
+    body: 'A NexumLab e seus desenvolvedores não se responsabilizam por quaisquer perdas, danos ou consequências jurídicas decorrentes do uso direto das mensagens geradas (seja envio por WhatsApp, e-mail ou outro meio) sem a prévia revisão de um advogado habilitado pela OAB.',
+  },
+  {
+    title: '4. Proteção de dados',
+    body: 'Os dados inseridos no terminal são processados no próprio navegador para a geração dos resultados e não são armazenados em nossos servidores. Ainda assim, recomendamos não inserir dados sensíveis (como CPF ou número de conta bancária) nos campos de texto livre.',
+  },
+];
 
-const Footer = () => {
-  return (
-    <footer className='bg-[#050505] border-t-2 border-gray-900 py-16 px-6 md:px-12'>
-      <div className='max-w-6xl mx-auto'>
-        <div className='mb-12 flex flex-col items-center justify-center gap-6'>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-10">
-            <a href="/" title="NexumLab" className="logo-wrapper footer-logo-container flex items-center justify-center hover:opacity-80 transition-opacity">
-              <img 
-                src={ASSETS.LOGOS.NEXUMLAB}
-                alt="NexumLab Logo" 
-                className="logo-image h-[40px] w-auto"
-                loading="eager"
-                crossOrigin="anonymous"
-              />
-            </a>
-            
-            <div className="hidden md:block h-12 w-[1px] bg-gray-800"></div>
-            
-            <a href="/" title="AuditorCLT" className="logo-wrapper footer-logo-container flex items-center justify-center hover:opacity-80 transition-opacity">
-              <img 
-                src={ASSETS.LOGOS.AUDITOR_CLT}
-                alt="AuditorCLT Logo"
-                className="logo-image h-[40px] w-auto"
-                loading="eager"
-                crossOrigin="anonymous"
-              />
-            </a>
-          </div>
-          <p className='text-gray-400 text-sm md:text-base uppercase tracking-widest text-center mt-4'>
-            Serviço oferecido pela <span className='text-red-500 font-bold'>Nexumlab</span>
-          </p>
+const Footer = () => (
+  <footer className="relative bg-background pt-24 pb-12 overflow-hidden border-t border-white/5">
+    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-border to-transparent opacity-50" />
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/5 blur-[120px] rounded-full pointer-events-none" />
+
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      className="max-w-4xl mx-auto px-6 relative z-10"
+    >
+      {/* Marca */}
+      <div className="flex flex-col items-center mb-16">
+        <div className="flex items-center gap-8 md:gap-10 mb-6">
+          <BrandLogo
+            brand="AUDITOR_CLT"
+            alt="auditorCLT"
+            className="h-7 w-auto opacity-60 hover:opacity-100 transition-opacity duration-500"
+          />
+          <span className="h-8 w-[1px] bg-white/10" aria-hidden="true" />
+          <a
+            href={LINKS.NEXUMLAB_SITE}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group"
+            aria-label="Ir para o site da NexumLab"
+          >
+            <BrandLogo
+              brand="NEXUMLAB"
+              alt="NexumLab"
+              className="h-6 w-auto opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+            />
+          </a>
         </div>
 
-        <div className='bg-[#0a0a0a] border border-gray-800 p-6 md:p-8 mb-8 rounded-sm hover:border-gray-700 transition-colors'>
-          <div className='flex items-start gap-4'>
-            <CpuIcon className='w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5' />
-            <div>
-              <span className='text-blue-400 font-bold text-sm md:text-base uppercase tracking-wider block mb-3'>
-                Tecnologia de Análise Preditiva
-              </span>
-              <p className='text-gray-300 text-xs md:text-sm leading-relaxed'>
-                Este sistema utiliza algoritmos avançados de processamento de linguagem natural e modelos de inteligência artificial generativa para estruturar argumentos jurídicos e realizar cálculos estimativos trabalhistas com base na legislação vigente.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-[#0a0a0a] border border-red-900/50 p-6 md:p-8 rounded-sm hover:border-red-900/80 transition-colors'>
-          <div className='flex items-start gap-4'>
-            <AlertTriangle className='w-6 h-6 text-red-500 flex-shrink-0 mt-0.5' />
-            <div>
-              <span className='text-red-500 font-bold text-sm md:text-base uppercase tracking-wider block mb-5'>
-                Aviso Legal e Termos de Uso
-              </span>
-              
-              <div className="space-y-5">
-                <p className='text-gray-300 text-xs md:text-sm leading-relaxed'>
-                  <strong>1. Natureza Informativa:</strong> As informações, cálculos e minutas gerados por esta ferramenta têm caráter estritamente educativo e informativo. Eles representam simulações baseadas em dados inseridos pelo usuário e não devem ser interpretados como documentos oficiais ou sentenças judiciais.
-                </p>
-                
-                <p className='text-gray-300 text-xs md:text-sm leading-relaxed'>
-                  <strong>2. Ausência de Assessoria Jurídica:</strong> O uso desta plataforma NÃO constitui relação advogado-cliente nem substitui a consulta jurídica profissional. A complexidade das leis trabalhistas envolve convenções coletivas, acordos individuais e particularidades fáticas que uma IA não pode capturar integralmente.
-                </p>
-
-                <p className='text-gray-300 text-xs md:text-sm leading-relaxed'>
-                  <strong>3. Isenção de Responsabilidade:</strong> A Nexumlab e seus desenvolvedores não se responsabilizam por quaisquer perdas, danos ou consequências jurídicas decorrentes do uso direto das mensagens geradas (seja envio por WhatsApp, e-mail ou outro meio) sem a prévia revisão de um advogado habilitado pela OAB.
-                </p>
-
-                <p className='text-gray-300 text-xs md:text-sm leading-relaxed'>
-                  <strong>4. Proteção de Dados:</strong> Os dados inseridos no terminal são processados em tempo real para a geração dos resultados e não são armazenados permanentemente em nossos servidores públicos. Recomendamos não inserir dados sensíveis (como CPF ou número de conta bancária) nos campos de texto livre.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-center gap-8 mt-10 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-gray-400" />
-            <span className="text-xs tracking-wider text-gray-400 uppercase font-semibold">SSL Encrypted</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-gray-400" />
-            <span className="text-xs tracking-wider text-gray-400 uppercase font-semibold">Secure Data</span>
-          </div>
-        </div>
-
-        <div className='mt-12 pt-8 border-t border-gray-900 text-center'>
-          <p className='text-gray-500 text-[10px] md:text-xs font-mono uppercase tracking-widest'>
-            &gt; System v1.0.0 | {new Date().getFullYear()} | All Rights Reserved
-          </p>
-        </div>
+        <a
+          href={LINKS.NEXUMLAB_SITE}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 font-mono-sys text-[10px] tracking-[0.25em] text-secondary hover:text-foreground transition-colors relative group"
+        >
+          UM SISTEMA NEXUMLAB
+          <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+          <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-accent group-hover:w-full transition-all duration-300 ease-out" />
+        </a>
       </div>
-    </footer>
-  );
-};
+
+      {/* Como funciona */}
+      <section className="lab-card p-6 md:p-8 mb-5">
+        <div className="flex items-start gap-4">
+          <Cpu className="w-5 h-5 text-destructive shrink-0 mt-1" />
+          <div>
+            <h2 className="font-mono-sys text-[10px] tracking-[0.2em] text-destructive uppercase mb-3">
+              Como o cálculo é feito
+            </h2>
+            <p className="text-secondary text-xs md:text-sm font-light leading-relaxed">
+              O terminal aplica um motor de cálculo determinístico construído sobre as
+              regras da CLT (saldo de salário, aviso prévio, 13º proporcional, férias
+              e multa de FGTS) e monta a minuta a partir de modelos de texto
+              pré-estruturados, no tom escolhido por você. Todo o processamento acontece
+              no seu navegador.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Aviso legal */}
+      <section className="lab-card lab-card-alert p-6 md:p-8">
+        <div className="flex items-start gap-4">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-1" />
+          <div>
+            <h2 className="font-mono-sys text-[10px] tracking-[0.2em] text-destructive uppercase mb-5">
+              Aviso legal e termos de uso
+            </h2>
+
+            <div className="space-y-5">
+              {LEGAL_ITEMS.map((item) => (
+                <p key={item.title} className="text-secondary text-xs md:text-sm font-light leading-relaxed">
+                  <strong className="text-foreground/80 font-medium">{item.title}:</strong>{' '}
+                  {item.body}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Selos */}
+      <div className="flex justify-center gap-8 mt-12 mb-10">
+        <span className="flex items-center gap-2 font-mono-sys text-[10px] tracking-widest text-secondary/60">
+          <Shield className="w-4 h-4" />
+          SSL ENCRYPTED
+        </span>
+        <span className="flex items-center gap-2 font-mono-sys text-[10px] tracking-widest text-secondary/60">
+          <Lock className="w-4 h-4" />
+          SEM ARMAZENAMENTO
+        </span>
+      </div>
+
+      <div className="flex flex-col items-center">
+        <div className="w-16 h-[1px] bg-border mb-8" />
+        <p className="text-center font-mono-sys text-[10px] text-muted tracking-[0.3em] leading-loose">
+          SYSTEM V1.1.0
+          <span className="hidden md:inline mx-4">|</span>
+          <br className="md:hidden" />
+          &copy; {new Date().getFullYear()} NEXUMLAB
+          <span className="hidden md:inline mx-4">|</span>
+          <br className="md:hidden" />
+          ALL RIGHTS RESERVED
+        </p>
+      </div>
+    </motion.div>
+  </footer>
+);
 
 export default memo(Footer);
