@@ -52,6 +52,16 @@
     --glow-subtle: 0 0% 100%;
   }
 
+  /*
+   * O `useScroll` do HeroSection usa o <html> como container de rolagem e mede
+   * a posição do alvo em relação a ele. Com o container estático a medição do
+   * parallax fica imprecisa — daí o aviso "non-static position" do
+   * framer-motion. Sem deslocamento algum, `relative` aqui não move nada.
+   */
+  html {
+    position: relative;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Outfit", system-ui, -apple-system, sans-serif;
