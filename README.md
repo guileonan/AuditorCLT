@@ -2,6 +2,32 @@
 
 Versão do auditorCLT alinhada ao sistema de design do site NexumLab.
 
+## Status atual (24/08/2026, 01:04 — última verificação real)
+
+**No ar e funcionando:** https://auditorclt.nexumlab.net.br — Cloudflare Pages,
+HTTPS válido até 22/11/2026, conteúdo conferido (título, HTML, headers
+`server: cloudflare`). Não é suposição, foi testado com `curl` e no navegador.
+
+O que já aconteceu, pra não repetir:
+- Deploy conectado ao GitHub (`guileonan/AuditorCLT`, branch `main`) — push novo já dispara build automático no Cloudflare
+- Domínio `auditorclt.nexumlab.net.br` migrado da Hostinger pro Cloudflare Pages: o site antigo foi **removido** do hPanel da Hostinger, e um CNAME (`auditorclt` → `auditorclt.pages.dev`) foi criado na zona DNS de `nexumlab.net.br`, que continua na Hostinger
+- `nexumlab.net.br` (raiz — site institucional) **não foi mexido** e continua na Hostinger de propósito — ver "O que falta" abaixo
+
+**⚠️ Pendência imediata:** existe 1 commit local (`ae5ee88` — zera vulnerabilidades do npm audit, corrige toast e parallax, testes 29/29 passando) que **ainda não foi enviado pro GitHub**. Rodar `git push` antes de qualquer coisa nova — sem isso o deploy em produção está uma versão atrás do que está no disco.
+
+## O que falta (fora deste projeto)
+
+O site **institucional** da NexumLab (`nexumlab.net.br`, raiz — diferente deste
+app) ainda está no Horizons/Hostinger, não migrado. Motivo: o formulário de
+lista de espera usa PocketBase com endpoint `/hcgi/platform`, que é **interno
+da Hostinger Horizons** e não existe fora dali — migrar sem resolver isso
+quebra o formulário silenciosamente. Fica pra quando alguém decidir o destino
+do formulário (Formspree, Google Forms, ou self-host do PocketBase). Isso é
+um projeto separado, não uma tarefa deste repositório.
+
+Contexto mais completo (por quê, decisões, histórico) em
+`~/Documents/segundo-cerebro/02-projetos/auditorclt.md`.
+
 ## Rodar local
 
 ```bash
@@ -35,8 +61,10 @@ Duas rotas.
 | Build output directory | `dist` |
 | Node version | `20` (variável de ambiente `NODE_VERSION`) |
 
-Depois: Custom domains → `auditorclt.nexumlab.net.br` → o Cloudflare mostra o
-CNAME para cadastrar no DNS da Hostinger.
+Domínio customizado já configurado (ver "Status atual" no topo deste
+arquivo) — não precisa refazer. Se um dia precisar recriar do zero: Custom
+domains → `auditorclt.nexumlab.net.br` → o Cloudflare mostra o CNAME pra
+cadastrar no DNS de onde o domínio estiver.
 
 `public/_redirects` e `public/_headers` já estão configurados (fallback de SPA,
 cache imutável em `/assets/*`, headers de segurança).
